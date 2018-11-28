@@ -1,9 +1,12 @@
 package mapbox1.myapplication;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -22,18 +25,21 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
 import mapbox1.myapplication.model.Plugin;
 import mapbox1.myapplication.model.PluginDeviceInfo;
+import mapbox1.myapplication.model.PluginDeviceInfoList;
 import mapbox1.myapplication.model.Plugins;
 
 public class MainActivity extends AppCompatActivity {
@@ -57,6 +63,40 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        findViewById(R.id.save_json_to_sp).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        saveJsonToSP();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
+        findViewById(R.id.save_json_to_parcel_file).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        saveJsonToParcel();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
         findViewById(R.id.convert).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -64,6 +104,12 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         convertJsonToFlatbuffer();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done", Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 }).start();
             }
@@ -77,8 +123,57 @@ public class MainActivity extends AppCompatActivity {
                         long ts = System.currentTimeMillis();
                         JSONArray ja = readData();
                         List<PluginDeviceInfo> list = parseJSON(ja);
-                        long delta = System.currentTimeMillis() - ts;
+                        final long delta = System.currentTimeMillis() - ts;
                         Log.d(TAG,"parse_json:"+delta);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done:"+delta, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
+        findViewById(R.id.parse_parcel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        long ts = System.currentTimeMillis();
+                        PluginDeviceInfo.count = 0;
+                        PluginDeviceInfoList list = parseParcel();
+                        final long delta = System.currentTimeMillis() - ts;
+                        Log.d(TAG,"PluginDeviceInfo count="+PluginDeviceInfo.count);
+                        Log.d(TAG,"parse_parcel:"+delta);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done:"+delta, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).start();
+            }
+        });
+        findViewById(R.id.parse_json_from_sp).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        long ts = System.currentTimeMillis();
+                        JSONArray ja = readDataFromSP();
+                        List<PluginDeviceInfo> list = parseJSON(ja);
+                        final long delta = System.currentTimeMillis() - ts;
+                        Log.d(TAG,"parse_json_from_sp:"+delta);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done:"+delta, Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 }).start();
             }
@@ -91,8 +186,14 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         long ts = System.currentTimeMillis();
                         List<PluginDeviceInfo> list = parseFlatBuffer();
-                        long delta = System.currentTimeMillis() - ts;
+                        final long delta = System.currentTimeMillis() - ts;
                         Log.d(TAG,"parse_flatbuffer:"+delta);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this,"done:"+delta, Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 }).start();
             }
@@ -113,58 +214,59 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
             PluginDeviceInfo info = new PluginDeviceInfo();
+            info.mProductId = plugin.pdId();
+            info.mStatus = plugin.status();
+            info.mMinAppVersion = plugin.minAppVersion();
             info.mBindConfirm = plugin.bindConfirm() == 1 ? true : false;
+            info.mPid = plugin.pid();
             info.mBluetoothBindStyle = plugin.btBindStyle();
+            info.mSupportWexinShare = plugin.wexinShare() == 1 ? true : false;
+            info.mSupportPermissionControl = plugin.permissionControl();
             info.mBluetoothMatch = plugin.btMatch();
-            info.mBluetoothRssi = plugin.btRssi();
-            info.mBrandName = plugin.brandName();
+            info.mSCFailed = plugin.scFailed();
+            info.mSupportVoiceCtrl = plugin.voiceControl();
+            info.mSupportBeingVoiceCtrlED = plugin.voiceCtrlEd();
+            info.mSupportOpHistory = plugin.opHistory();
+            info.mScType = plugin.scType();
+            info.mScStatus = plugin.scStatus();
+            info.mOfflineEnter = plugin.ctOfflineEnter();
+            info.mScTypeMore = new ArrayList<>();
+            info.mRelations = new ArrayList<>(); // todo
             info.mCategoryName = plugin.cateName();
-            info.mDesc = plugin.desc();
-            info.mIcon336 = plugin.iconBluetoothPairing();
-            info.mIconBluetoothPair = plugin.iconBluetoothPairing();
-            info.mIconLockScreenOff = plugin.iconLockScreenOff();
-            info.mIconLockScreenOn = plugin.iconLockScreenOn();
+            info.mIconOn = plugin.iconOn();
             info.mIconOff = plugin.iconOff();
             info.mIconOffline = plugin.iconOffline();
-            info.mIconOn = plugin.iconOn();
-            info.mIconReal = plugin.iconReal();
             info.mIconSmartConfig = plugin.iconSmartconfig();
+            info.mIconLockScreenOn = plugin.iconLockScreenOn();
+            info.mIconLockScreenOff = plugin.iconLockScreenOff();
+            info.mSubCategoryId = TextUtils.isEmpty(plugin.subcategoryId()) ? 0 : Integer.valueOf(plugin.subcategoryId());
+            info.mDesc = plugin.desc();
+            info.mModel = plugin.model();
+            info.mName = plugin.name();
+            info.mModelRegex = plugin.modelRegex();
+            info.mIconBluetoothPair = plugin.iconBluetoothPairing();
+            info.mIconReal = plugin.iconReal();
+            info.mNameSmartConfig = plugin.nameSmartconfig();
+            info.mBrandName = plugin.brandName();
+            info.mBluetoothRssi = plugin.btRssi();
             info.mIconSmartConfigOff = plugin.iconSmartconfigOff();
+
+            info.mIcon336 = plugin.iconBluetoothPairing();
             info.mIsBluetoothGateway = plugin.bindConfirm();
             info.mIsBluetoothSecurityChip = plugin.bindConfirm();
             info.mKuailianPasswd = plugin.brandName();
-            info.mMinAppVersion = plugin.minAppVersion();
-            info.mModel = plugin.model();
-            info.mModelRegex = plugin.modelRegex();
-            info.mName = plugin.name();
-            info.mNameSmartConfig = plugin.nameSmartconfig();
-            info.mOfflineEnter = plugin.ctOfflineEnter();
-            info.mPid = plugin.pid();
-            info.mProductId = plugin.pdId();
             info.mRank = plugin.bindConfirm();
-            info.mRelations = new ArrayList<>(); // todo
-            info.mSCFailed = plugin.scFailed();
-            info.mScStatus = plugin.scStatus();
-            info.mScType = plugin.scType();
-            info.mScTypeMore = new ArrayList<>();
-            info.mStatus = plugin.status();
-            info.mSubCategoryId = TextUtils.isEmpty(plugin.subcategoryId()) ? 0 : Integer.valueOf(plugin.subcategoryId());
-            info.mSupportBeingVoiceCtrlED = plugin.voiceCtrlEd();
-            info.mSupportOpHistory = plugin.opHistory();
-            info.mSupportPermissionControl = plugin.permissionControl();
-            info.mSupportVoiceCtrl = plugin.voiceControl();
-            info.mSupportWexinShare = plugin.wexinShare() == 1 ? true : false;
             info.mWifiSendWays = new ArrayList<>();
             list.add(info);
         }
         return list;
     }
 
-    private List<PluginDeviceInfo> parseJSON(JSONArray ja) {
-        if (ja.length() <= 0) {
+    private ArrayList<PluginDeviceInfo> parseJSON(JSONArray ja) {
+        if (ja == null || ja.length() <= 0) {
             return null;
         }
-        List<PluginDeviceInfo> list = new ArrayList<>();
+        ArrayList<PluginDeviceInfo> list = new ArrayList<>();
         for (int i = 0; i < ja.length(); i++) {
             JSONObject jo = ja.optJSONObject(i);
             PluginDeviceInfo info = PluginDeviceInfo.buildFromPref(jo);
@@ -204,7 +306,11 @@ public class MainActivity extends AppCompatActivity {
     private void savePluginsToFlatBuffer(List<PluginDeviceInfo> list) {
         FlatBufferBuilder builder = new FlatBufferBuilder(1024);
 //        Plugins.startPluginVector(builder, list.size());
-        for(PluginDeviceInfo info : list) {
+        int pluginOffset = 0;
+        int len = list.size();
+        int[] intArray = new int[len];
+        for(int i = 0; i < len; i++) {
+            PluginDeviceInfo info = list.get(i);
             int icon_onOffset = builder.createString(info.mIconOn);
             int icon_offOffset = builder.createString(info.mIconOff);
             int icon_offlineOffset = builder.createString(info.mIconOffline);
@@ -226,51 +332,89 @@ public class MainActivity extends AppCompatActivity {
             int icon_smartconfig_offOffset = builder.createString(info.mIconSmartConfigOff);
             int relationOffset = builder.createString("relations"); // todo list
             int cate_nameOffset = builder.createString(info.mCategoryName);
-            int pluginOffset = Plugin.createPlugin(builder,
+            pluginOffset = Plugin.createPlugin(builder,
                     info.mProductId,
+                    info.mStatus,
+                    info.mStatus,
+                    info.mMinAppVersion,
+                    info.mBindConfirm ? 1 : 0,
+                    info.mPid,
+                    info.mBluetoothBindStyle,
+                    info.mSupportWexinShare ? 1 : 0,
+                    info.mSupportPermissionControl,
+                    info.mBluetoothMatch,
+                    info.mSCFailed,
+                    info.mSupportVoiceCtrl,
+                    info.mSupportBeingVoiceCtrlED,
+                    info.mSupportOpHistory,
+                    info.mScType,
+                    info.mScStatus,
+                    info.mOfflineEnter,
+                    1L,
+                    sc_type_moreOffset,
+                    sc_type_more_v2Offset,
+                    relationOffset,
+                    cate_nameOffset,
                     icon_onOffset,
                     icon_offOffset,
                     icon_offlineOffset,
                     icon_smartconfigOffset,
                     icon_lock_screen_onOffset,
                     icon_lock_screen_offOffset,
-                    info.mStatus,
-                    info.mStatus,
-                    System.currentTimeMillis(),
-                    info.mMinAppVersion,
-                    info.mBindConfirm ? 1 : 0,modelOffset,
-                    nameOffset,subcategory_idOffset,descOffset,
-                    info.mPid,model_regexOffset,icon_bluetooth_pairingOffset,icon_realOffset,
-                    name_smartconfigOffset,brand_nameOffset,info.mBluetoothBindStyle,
-                    info.mSupportWexinShare ? 1 : 0,info.mSupportPermissionControl,info.mBluetoothMatch,bt_rssiOffset,
-                    info.mSCFailed,info.mSupportVoiceCtrl,info.mSupportBeingVoiceCtrlED,info.mSupportOpHistory,info.mScType,
-                    info.mScStatus,sc_type_moreOffset,sc_type_more_v2Offset,icon_smartconfig_offOffset,relationOffset,
-                    info.mOfflineEnter,cate_nameOffset);
-            Plugins.addPlugin(builder, pluginOffset);
+                    subcategory_idOffset,
+                    descOffset,
+                    modelOffset,
+                    nameOffset,
+                    model_regexOffset,
+                    icon_bluetooth_pairingOffset,
+                    icon_realOffset,
+                    name_smartconfigOffset,
+                    brand_nameOffset,
+                    bt_rssiOffset,
+                    icon_smartconfig_offOffset
+                    );
+            intArray[i] = pluginOffset;
         }
+        int offset = Plugins.createPluginVector(builder, intArray);
         Plugins.startPlugins(builder);
-        int len = Plugins.endPlugins(builder);
+        Plugins.addPlugin(builder, offset);
+        Plugins.addMyType(builder, 54456);
+        Plugins.addMyStatus(builder, 12345);
+        len = Plugins.endPlugins(builder);
         builder.finish(len);
         ByteBuffer buffer = builder.dataBuffer();
         saveFlatBufferDataToFile(buffer);
+
+//        Plugins plugins = Plugins.getRootAsPlugins(buffer);
+//        Log.d(TAG, "rebuilt myStatus="+plugins.myStatus());
+//        Log.d(TAG, "rebuilt myType="+plugins.myType());
+//        Log.d(TAG, "rebuilt pluginLength="+plugins.pluginLength());
+//        Plugin plugin = plugins.plugin(0);
+//        if(plugin != null) {
+//            Log.d(TAG, "plugin iconOn="+plugin.iconOn());
+//        }
+
     }
 
     private void saveFlatBufferDataToFile(ByteBuffer data) {
-        FileChannel channel = null;
+        FileOutputStream fos = null;
         try {
+//            data.rewind();
             File file = new File(getPluginFile());
             if(file.exists()) {
                 file.delete();
                 file.createNewFile();
             }
-            channel = new FileOutputStream(file).getChannel();
-            channel.write(data);
+            fos = new FileOutputStream(file);
+//            data.flip();
+//            channel.write(data);
+            fos.write(data.array(), data.position(), data.remaining());
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if(channel != null) {
+            if(fos != null) {
                 try {
-                    channel.close();
+                    fos.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -285,10 +429,11 @@ public class MainActivity extends AppCompatActivity {
 
     private ByteBuffer readFlatBufferDataFromFile(){
         try {
-            RandomAccessFile plugin = new RandomAccessFile(getPluginFile(), "rw");
-            byte[] data = new byte[(int)plugin.length()];
-            plugin.readFully(data);
-            plugin.close();
+            File file = new File(getPluginFile());
+            FileInputStream fis = new FileInputStream(file);
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            fis.close();
             ByteBuffer bb = ByteBuffer.wrap(data);
 
             return bb;
@@ -309,6 +454,89 @@ public class MainActivity extends AppCompatActivity {
         }
         savePluginsToFlatBuffer(list);
     }
+
+    private void saveJsonToSP() {
+        JSONArray ja = readData();
+        if (ja == null) {
+            return;
+        }
+        SharedPreferences sp = getSharedPreferences("plugin", Context.MODE_PRIVATE);
+        sp.edit().putString("content", ja.toString()).commit();
+    }
+
+    private PluginDeviceInfoList parseParcel(){
+        byte[] bytes = readParcelFromFile();
+        if(bytes == null) {
+            return null;
+        }
+        PluginDeviceInfoList list = ParcelableUtil.unmarshall(bytes, PluginDeviceInfoList.CREATOR);
+        return list;
+    }
+
+    private byte[] readParcelFromFile(){
+        File file = new File(getFilesDir()+File.separator+"plugin_parcel");
+        if(!file.exists()) {
+            return null;
+        }
+        try {
+            FileInputStream in = new FileInputStream(file);
+            byte[] bytes = new byte[(int) file.length()];
+            in.read(bytes);
+            in.close();
+            return bytes;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private void saveJsonToParcel() {
+        JSONArray ja = readData();
+        if (ja == null) {
+            return;
+        }
+        ArrayList<PluginDeviceInfo> list = parseJSON(ja);
+        PluginDeviceInfoList pluginDeviceInfoList = new PluginDeviceInfoList();
+        Log.d(TAG,"PluginDeviceInfo list size = "+list.size());
+        pluginDeviceInfoList.mList = list;
+        pluginDeviceInfoList.value1 = 12344;
+        pluginDeviceInfoList.value2 = 988;
+        byte[] bytes = ParcelableUtil.marshall(pluginDeviceInfoList);
+
+        File file = new File(getFilesDir()+File.separator+"plugin_parcel");
+        if(file.exists()) {
+            file.delete();
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            fileOutputStream.write(bytes);
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private JSONArray readDataFromSP() {
+        SharedPreferences sp = getSharedPreferences("plugin", Context.MODE_PRIVATE);
+        String s = sp.getString("content", "");
+        try {
+            return new JSONArray(s);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {

@@ -14,19 +14,27 @@ public final class Plugins extends Table {
   public void __init(int _i, ByteBuffer _bb) { bb_pos = _i; bb = _bb; }
   public Plugins __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
+  public int myType() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
+  public int myStatus() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
   public Plugin plugin(int j) { return plugin(new Plugin(), j); }
-  public Plugin plugin(Plugin obj, int j) { int o = __offset(4); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
-  public int pluginLength() { int o = __offset(4); return o != 0 ? __vector_len(o) : 0; }
+  public Plugin plugin(Plugin obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
+  public int pluginLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createPlugins(FlatBufferBuilder builder,
+      int my_type,
+      int my_status,
       int pluginOffset) {
-    builder.startObject(1);
+    builder.startObject(3);
     Plugins.addPlugin(builder, pluginOffset);
+    Plugins.addMyStatus(builder, my_status);
+    Plugins.addMyType(builder, my_type);
     return Plugins.endPlugins(builder);
   }
 
-  public static void startPlugins(FlatBufferBuilder builder) { builder.startObject(1); }
-  public static void addPlugin(FlatBufferBuilder builder, int pluginOffset) { builder.addOffset(0, pluginOffset, 0); }
+  public static void startPlugins(FlatBufferBuilder builder) { builder.startObject(3); }
+  public static void addMyType(FlatBufferBuilder builder, int myType) { builder.addInt(0, myType, 0); }
+  public static void addMyStatus(FlatBufferBuilder builder, int myStatus) { builder.addInt(1, myStatus, 0); }
+  public static void addPlugin(FlatBufferBuilder builder, int pluginOffset) { builder.addOffset(2, pluginOffset, 0); }
   public static int createPluginVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startPluginVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static int endPlugins(FlatBufferBuilder builder) {

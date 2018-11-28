@@ -1,5 +1,8 @@
 package mapbox1.myapplication.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -7,7 +10,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PluginDeviceInfo {
+public class PluginDeviceInfo implements Parcelable {
     public String mModel;
     public int mProductId;
     public int mMinAppVersion;
@@ -59,8 +62,8 @@ public class PluginDeviceInfo {
     /**
      * 快连状态
      */
-    public List<Integer> mScTypeMore;
-    public List<Integer> mWifiSendWays;
+    public List<Integer> mScTypeMore = new ArrayList<>();
+    public List<Integer> mWifiSendWays = new ArrayList<>();
 
     public static final int WIFI_SEND_AP = 0;
     public static final int WIFI_SEND_BLE = 1;
@@ -69,7 +72,7 @@ public class PluginDeviceInfo {
     public boolean isSupport5G;
 
     public String mIconSmartConfigOff;
-    public List<String> mRelations;
+    public List<String> mRelations = new ArrayList<>();
     public int mRank;
 
 
@@ -147,4 +150,121 @@ public class PluginDeviceInfo {
 
         return deviceInfo;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(this.mModel);
+        dest.writeInt(this.mProductId);
+        dest.writeInt(this.mMinAppVersion);
+        dest.writeString(this.mName);
+        dest.writeString(this.mNameSmartConfig);
+        dest.writeString(this.mIconOn);
+        dest.writeString(this.mIconOff);
+        dest.writeString(this.mIconOffline);
+        dest.writeString(this.mIconSmartConfig);
+        dest.writeString(this.mIconLockScreenOn);
+        dest.writeString(this.mIconLockScreenOff);
+        dest.writeString(this.mIconBluetoothPair);
+        dest.writeString(this.mIconReal);
+        dest.writeByte(this.mBindConfirm ? (byte) 1 : (byte) 0);
+        dest.writeString(this.mModelRegex);
+        dest.writeString(this.mDesc);
+        dest.writeInt(this.mPid);
+        dest.writeString(this.mKuailianPasswd);
+        dest.writeInt(this.mStatus);
+        dest.writeString(this.mBrandName);
+        dest.writeString(this.mCategoryName);
+        dest.writeInt(this.mBluetoothBindStyle);
+        dest.writeInt(this.mOfflineEnter);
+        dest.writeInt(this.mSupportPermissionControl);
+        dest.writeByte(this.mSupportWexinShare ? (byte) 1 : (byte) 0);
+        dest.writeInt(this.mBluetoothMatch);
+        dest.writeString(this.mBluetoothRssi);
+        dest.writeInt(this.mSCFailed);
+        dest.writeInt(this.mSupportVoiceCtrl);
+        dest.writeInt(this.mSupportBeingVoiceCtrlED);
+        dest.writeInt(this.mSupportOpHistory);
+        dest.writeInt(this.mIsBluetoothSecurityChip);
+        dest.writeInt(this.mIsBluetoothGateway);
+        dest.writeString(this.mIcon336);
+        dest.writeInt(this.mSubCategoryId);
+        dest.writeInt(this.mScType);
+        dest.writeInt(this.mScStatus);
+//        dest.writeList(this.mScTypeMore);
+//        dest.writeList(this.mWifiSendWays);
+        dest.writeByte(this.isSupport5G ? (byte) 1 : (byte) 0);
+        dest.writeString(this.mIconSmartConfigOff);
+        dest.writeStringList(this.mRelations);
+        dest.writeInt(this.mRank);
+    }
+
+    public PluginDeviceInfo() {
+    }
+
+    public static int count = 0;
+    protected PluginDeviceInfo(Parcel in) {
+        count++;
+        this.mModel = in.readString();
+        this.mProductId = in.readInt();
+        this.mMinAppVersion = in.readInt();
+        this.mName = in.readString();
+        this.mNameSmartConfig = in.readString();
+        this.mIconOn = in.readString();
+        this.mIconOff = in.readString();
+        this.mIconOffline = in.readString();
+        this.mIconSmartConfig = in.readString();
+        this.mIconLockScreenOn = in.readString();
+        this.mIconLockScreenOff = in.readString();
+        this.mIconBluetoothPair = in.readString();
+        this.mIconReal = in.readString();
+        this.mBindConfirm = in.readByte() != 0;
+        this.mModelRegex = in.readString();
+        this.mDesc = in.readString();
+        this.mPid = in.readInt();
+        this.mKuailianPasswd = in.readString();
+        this.mStatus = in.readInt();
+        this.mBrandName = in.readString();
+        this.mCategoryName = in.readString();
+        this.mBluetoothBindStyle = in.readInt();
+        this.mOfflineEnter = in.readInt();
+        this.mSupportPermissionControl = in.readInt();
+        this.mSupportWexinShare = in.readByte() != 0;
+        this.mBluetoothMatch = in.readInt();
+        this.mBluetoothRssi = in.readString();
+        this.mSCFailed = in.readInt();
+        this.mSupportVoiceCtrl = in.readInt();
+        this.mSupportBeingVoiceCtrlED = in.readInt();
+        this.mSupportOpHistory = in.readInt();
+        this.mIsBluetoothSecurityChip = in.readInt();
+        this.mIsBluetoothGateway = in.readInt();
+        this.mIcon336 = in.readString();
+        this.mSubCategoryId = in.readInt();
+        this.mScType = in.readInt();
+        this.mScStatus = in.readInt();
+        this.mScTypeMore = new ArrayList<Integer>();
+//        in.readList(this.mScTypeMore, Integer.class.getClassLoader());
+        this.mWifiSendWays = new ArrayList<Integer>();
+//        in.readList(this.mWifiSendWays, Integer.class.getClassLoader());
+        this.isSupport5G = in.readByte() != 0;
+        this.mIconSmartConfigOff = in.readString();
+        this.mRelations = in.createStringArrayList();
+        this.mRank = in.readInt();
+    }
+
+    public static final Parcelable.Creator<PluginDeviceInfo> CREATOR = new Parcelable.Creator<PluginDeviceInfo>() {
+        @Override
+        public PluginDeviceInfo createFromParcel(Parcel source) {
+            return new PluginDeviceInfo(source);
+        }
+
+        @Override
+        public PluginDeviceInfo[] newArray(int size) {
+            return new PluginDeviceInfo[size];
+        }
+    };
 }

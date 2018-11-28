@@ -14,6 +14,18 @@
         android:orientation="vertical"
         android:gravity="center">
         <Button
+            android:id="@+id/save_json_to_sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="30dp"
+            android:text="save json to sharedpreference"/>
+        <Button
+            android:id="@+id/save_json_to_parcel_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="30dp"
+            android:text="save json to parcel file"/>
+        <Button
             android:id="@+id/convert"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -24,7 +36,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="30dp"
-            android:text="parse json"/>
+            android:text="parse json file"/>
+        <Button
+            android:id="@+id/parse_parcel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="30dp"
+            android:text="parse from parcel file"/>
+        <Button
+            android:id="@+id/parse_json_from_sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="30dp"
+            android:text="parse json from sp"/>
         <Button
             android:id="@+id/parse_flatbuffer"
             android:layout_width="wrap_content"
